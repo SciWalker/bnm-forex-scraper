@@ -6,13 +6,13 @@ import csv
 import pandas
 import threading
 import time
+import sys
 import numpy as np
 def BNMFunction(timenow):
     time_bnm=""
     time_9am=timenow.replace(hour=9, minute=10, second=0, microsecond=0)
     time_12pm=time_9am.replace(hour=12, minute =20, second = 0, microsecond=0)
     time_5pm=time_9am.replace(hour=17, minute =20, second = 0, microsecond=0)
-    print(timenow)
     if timenow>time_9am:
         time_bnm="0900"
     if timenow>time_12pm:
@@ -21,11 +21,8 @@ def BNMFunction(timenow):
         time_bnm="1700"
     if timenow<=time_9am:
         time_bnm="1700"
-    print(time_bnm)
     response = requests.get("https://api.bnm.gov.my/public/exchange-rate", params= {"quote":"fx","session":"0900"}, headers={'Accept': 'application/vnd.BNM.API.v1+json'})
     json_response = response.json()
-    print("BNM data")
-    print(json_response)
     currency_exchange_rate=json_response['data']
     bnm_data=[]
     currency_list_bnm = ['AED','AUD','BND','CAD','CHF','CNY','EGP','EUR','GBP','HKD','IDR','JPY','KHR','KRW','MMK','NPR','NZD','PHP','PKR','SAR','SDR','SGD','THB','TWD','USD','VND']
@@ -62,24 +59,20 @@ def myPeriodicFunction():
     html_page=response.content
     soup = BeautifulSoup(html_page, 'html.parser')
     text = soup.find_all(class_='text-right pr-4')
-    #text = soup.find_all(class_="tombstone-container")
     output=[]
     for i in range(len(text)):
         output.append(text[i].get_text())
     currency_list=['USD','100CNY','EUR','SGD','100IDR','100JPY']
-    #currency_list=['USD','100CNY','EUR','SGD','100IDR','100JPY','MYR', 'CND','INR']
     timenow=datetime.datetime.now()
     combined_array=[]
     perc_diff=[]
     perc_diff_BNM=[]
-    print(BNM_value)
     for i in range(len(currency_list)):
         combined_array.append([BNM_value[i][0],BNM_value[i][1],RHB_values[i][0],RHB_values[i][1],currency_list[i],output[i]])
         perc_diff.append(round(100*(float(combined_array[i][5])/float(combined_array[i][3])-1),3))
         combined_array[i].append(perc_diff[i])
         perc_diff_BNM.append(round(100*(float(combined_array[i][5])/float(combined_array[i][1])-1),3))
         combined_array[i].append(perc_diff_BNM[i])
-    print(combined_array)
     header=["BNM","","RHB","","MoneyMatch","","Markup vs RHB(%)","Markup vs BNM (%)"]
     with open('MoneyMatch data.csv', 'a', newline='') as csvFile:
         writer = csv.writer(csvFile)
@@ -95,7 +88,7 @@ def myPeriodicFunction():
     csvFile.close()
 
 def RHBFunction():
-    link="https://www.rhbgroup.com/malaysia/products-and-services/rates-and-charges/treasury-rates/foreign-exchange"
+    link="https://www.rhbgroup.com/treasury-rates/foreign-exchange/index.html"
     response = requests.get(link)
     html_page=response.content
     #soup = BeautifulSoup(html_page, 'html.parser')
@@ -151,16 +144,16 @@ iterations = 900
 tstep = datetime.timedelta(seconds=10)
 for i in np.arange(iterations):
     timenow = datetime.datetime.now()
-    try:
-        BNM_value=BNMFunction(timenow)
-        RHB_values=RHBFunction()
-        myPeriodicFunction()
-        
-        while datetime.datetime.now() < timenow + tstep:
-            1==1
-        print("===================================")
-    except Exception as e:
-        print("error:"+str(e)+", rest for a while.")
-        time.sleep(50)
-        pass
+    # try:
+    BNM_value=BNMFunction(timenow)
+    RHB_values=RHBFunction()
+    myPeriodicFunction()
+    
+    while datetime.datetime.now() < timenow + tstep:
+        1==1
+    # except Exception as e:
+    #     print("error:"+str(e)+", retry in a while.")
+    #     print('Error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
+    #     time.sleep(50)
+    #     pass
 
