@@ -2,18 +2,14 @@ import requests
 from bs4 import BeautifulSoup
 import datetime
 import csv
+import sys
 import pandas as pd
 import io
 import numpy as np
-
+import time
 class scraper:
     def __init__(self):
         self.currency_list = ['USD','100CNY','EUR','SGD','100IDR','100JPY']
-
-
- 
-    def is_part_currency(list):
-        return list in self.currency_list
 
 def BNMFunction(timenow):
     time_bnm=""
