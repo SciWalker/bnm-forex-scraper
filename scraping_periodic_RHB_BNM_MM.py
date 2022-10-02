@@ -77,7 +77,7 @@ def periodic_function(scraper_obj):
         perc_diff_BNM.append(round(100*(float(combined_array[i][5])/float(combined_array[i][1])-1),3))
         combined_array[i].append(perc_diff_BNM[i])
     header=["BNM","","RHB","","MoneyMatch","","Markup vs RHB(%)","Markup vs BNM (%)"]
-    with open('MoneyMatch data.csv', 'a', newline='') as csvFile:
+    with open('data/currency_exchange_data.csv', 'a', newline='') as csvFile:
         writer = csv.writer(csvFile)
         string_time=[(str(timenow.year)+'-'+str(timenow.month)+'-'+str(timenow.day)),(str(timenow.hour)+':'+str(timenow.minute)+':'+str(timenow.second))]
         writer.writerow('')
