@@ -7,6 +7,7 @@ import pandas as pd
 import io
 import numpy as np
 import time
+import os
 class scraper:
     def __init__(self):
         self.currency_list = ['USD','100CNY','EUR','SGD','100IDR','100JPY']
@@ -73,6 +74,8 @@ def periodic_function(scraper_obj):
         perc_diff_BNM.append(round(100*(float(combined_array[i][5])/float(combined_array[i][1])-1),3))
         combined_array[i].append(perc_diff_BNM[i])
     header=["BNM","","RHB","","MoneyMatch","","Markup vs RHB(%)","Markup vs BNM (%)"]
+    if not os.path.exists("./data"):
+        os.makedirs("./data")
     with open('data/currency_exchange_data.csv', 'a', newline='') as csvFile:
         writer = csv.writer(csvFile)
         string_time=[(str(timenow.year)+'-'+str(timenow.month)+'-'+str(timenow.day)),(str(timenow.hour)+':'+str(timenow.minute)+':'+str(timenow.second))]
