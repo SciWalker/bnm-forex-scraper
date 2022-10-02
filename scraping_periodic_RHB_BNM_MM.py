@@ -1,13 +1,20 @@
 import requests
 from bs4 import BeautifulSoup
-import json
 import datetime
 import csv
-import pandas
-import threading
-import time
-import sys
+import pandas as pd
+import io
 import numpy as np
+
+class scraper:
+    def __init__(self):
+        self.currency_list = ['USD','100CNY','EUR','SGD','100IDR','100JPY']
+
+
+ 
+    def is_part_currency(list):
+        return list in self.currency_list
+
 def BNMFunction(timenow):
     time_bnm=""
     time_9am=timenow.replace(hour=9, minute=10, second=0, microsecond=0)
@@ -48,11 +55,7 @@ def BNMFunction(timenow):
 
 
 
-def myPeriodicFunction():
-    #response_bnm = requests.get("https://api.bnm.gov.my/public/exchange-rate", params= {"quote":"fx","session":"1200"}, headers={'Accept': 'application/vnd.BNM.API.v1+json'})
-    #response = requests.get("https://api.bnm.gov.my/public/exchange-rate/USD/year/2019/month/5",headers={'Accept': 'application/vnd.BNM.API.v1+json'})
-    #print(response)
-    #json_response_bnm = response_bnm.json()
+def periodic_function(scraper_obj):
 
     link="https://transfer.moneymatch.co/business" 
     response = requests.get(link)
@@ -62,13 +65,13 @@ def myPeriodicFunction():
     output=[]
     for i in range(len(text)):
         output.append(text[i].get_text())
-    currency_list=['USD','100CNY','EUR','SGD','100IDR','100JPY']
     timenow=datetime.datetime.now()
+    
     combined_array=[]
     perc_diff=[]
     perc_diff_BNM=[]
-    for i in range(len(currency_list)):
-        combined_array.append([BNM_value[i][0],BNM_value[i][1],RHB_values[i][0],RHB_values[i][1],currency_list[i],output[i]])
+    for i in range(len(scraper_obj.currency_list)):
+        combined_array.append([BNM_value[i][0],BNM_value[i][1],RHB_values[i][0],RHB_values[i][1],scraper_obj.currency_list[i],output[i]])
         perc_diff.append(round(100*(float(combined_array[i][5])/float(combined_array[i][3])-1),3))
         combined_array[i].append(perc_diff[i])
         perc_diff_BNM.append(round(100*(float(combined_array[i][5])/float(combined_array[i][1])-1),3))
@@ -77,83 +80,50 @@ def myPeriodicFunction():
     with open('MoneyMatch data.csv', 'a', newline='') as csvFile:
         writer = csv.writer(csvFile)
         string_time=[(str(timenow.year)+'-'+str(timenow.month)+'-'+str(timenow.day)),(str(timenow.hour)+':'+str(timenow.minute)+':'+str(timenow.second))]
-        print(string_time)
         writer.writerow('')
         writer.writerow(string_time)
         writer.writerow(header)
         for i in range(len(combined_array)):
             writer.writerow(combined_array[i])
-#            print(currency_list[i])
-#            print(output[i])
     csvFile.close()
 
-def RHBFunction():
-    link="https://www.rhbgroup.com/treasury-rates/foreign-exchange/index.html"
-    response = requests.get(link)
-    html_page=response.content
-    #soup = BeautifulSoup(html_page, 'html.parser')
-    #text = soup.find_all(class_=('text-right','text-center'),id_="rhbcontentplaceholder_0_rhbsection1_0_tabplaceholder_0_lvForeignExchangeRates_codeLabel_8")
-    soup = BeautifulSoup(html_page, features="lxml")
-    text = soup.findAll("td")
-    output_rhb=[]
-    filtered_rhb_rate=[]
-    for i in range(len(text)):
-        text_raw=text[i].get_text()
-        output_rhb.append(text_raw)
-    num_row=int(len(output_rhb)/7)
-    #currency_list=['USD','100CNY','EUR','SGD','100IDR','100JPY','MYR', 'CND','INR']
-    timenow=datetime.datetime.now()
-    for i in range(0,len(output_rhb)-num_row,6):
-        del output_rhb[i]
-    for i in range(1,len(output_rhb)-num_row,5):
-        del output_rhb[i]
-    for i in range(4,len(output_rhb)-num_row,4):
-        del output_rhb[i]
-    for i in range(2,len(output_rhb),4):
-        if output_rhb[i]=='-':
-            output_rhb[i]='-10000'
-        if output_rhb[i+1]=='-':
-            output_rhb[i+1]='-10000'
-    for i in range(2,len(output_rhb)-(num_row*2),2):
-        output_rhb[i+1]=(float(output_rhb[i])+float(output_rhb[i+1]))/2
-        output_rhb[i-2]=output_rhb[i-1]+output_rhb[i-2]
-        del output_rhb[i]
-        del output_rhb[i-1]
-    #for i in range(1,)
-    for i in range(len(output_rhb)):
-        if output_rhb[i]=="1USD":
-            filtered_rhb_rate.append(output_rhb[i:i+2])
-    for i in range(len(output_rhb)):
-        if output_rhb[i]=="100CNY":
-            filtered_rhb_rate.append(output_rhb[i:i+2])
-    for i in range(len(output_rhb)):
-        if output_rhb[i]=="1EUR":
-            filtered_rhb_rate.append(output_rhb[i:i+2])
-    for i in range(len(output_rhb)):
-        if output_rhb[i]=="1SGD":
-            filtered_rhb_rate.append(output_rhb[i:i+2])
-    for i in range(len(output_rhb)):
-        if output_rhb[i]=="100IDR":
-            filtered_rhb_rate.append(output_rhb[i:i+2])
-    for i in range(len(output_rhb)):
-        if output_rhb[i]=="100JPY":
-            filtered_rhb_rate.append(output_rhb[i:i+2])
-    return filtered_rhb_rate
+def RHBFunction(scraper_obj):
+    link="https://www.rhbgroup.com/treasury-rates/foreign-exchange/fx.csv"
 
+    ##TODO: read from the csv and get currency results, need to first remove spaces
+    data = requests.get('https://www.rhbgroup.com/treasury-rates/foreign-exchange/fx.csv').content
+    data=data.strip()
+    data_str=data.decode('utf-8')
+    #df_data = requests.get(r'C:\Users\WenWei\Downloads\fx.csv')
+    
+    data_str="".join(data_str.split(" ")[2:])
+    data_str=io.StringIO(data_str)
+
+    rawData = pd.read_csv(data_str,delimiter=',',names=["shortform","currency", "unit", "sell", "buy","OOD"])
+    ul_list=[]
+    for i in scraper_obj.currency_list:
+        if "100" in i:
+            i=(i.replace("100",""))
+        sublist=[i,(rawData.loc[rawData['shortform']==i]['buy'].values[0]+rawData.loc[rawData['shortform']==i]['sell'].values[0])/2]
+        ul_list.append(sublist)
+    
+    return ul_list
+
+scraper_obj=scraper()
 iterations = 900
 tstep = datetime.timedelta(seconds=10)
 for i in np.arange(iterations):
     timenow = datetime.datetime.now()
-    # try:
-    BNM_value=BNMFunction(timenow)
-    RHB_values=RHBFunction()
-    myPeriodicFunction()
-    
-    while datetime.datetime.now() < timenow + tstep:
-        1==1
-    # except Exception as e:
-    #     print("error:"+str(e)+", retry in a while.")
-    #     print('Error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
-    #     time.sleep(50)
-    #     pass
+    try:
+        BNM_value=BNMFunction(timenow)
+        RHB_values=RHBFunction(scraper_obj)
+        periodic_function(scraper_obj)
+        
+        while datetime.datetime.now() < timenow + tstep:
+            1==1
+    except Exception as e:
+        print("error:"+str(e)+", retry in a while.")
+        print('Error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
+        time.sleep(50)
+        pass
 
