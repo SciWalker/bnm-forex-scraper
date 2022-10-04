@@ -11,7 +11,6 @@ import os
 class scraper:
     def __init__(self):
         self.currency_list = ['USD','100CNY','EUR','SGD','100IDR','100JPY']
-
 def BNMFunction(timenow):
     time_bnm=""
     time_9am=timenow.replace(hour=9, minute=10, second=0, microsecond=0)
@@ -61,29 +60,48 @@ def periodic_function(scraper_obj):
     text = soup.find_all(class_='text-right pr-4')
     output=[]
     for i in range(len(text)):
-        output.append(text[i].get_text())
-    timenow=datetime.datetime.now()
-    
-    combined_array=[]
+        arr1=[]
+        arr1.append(scraper_obj.currency_list[i])
+        arr1.append(text[i].get_text())
+        output.append(arr1)
     perc_diff=[]
     perc_diff_BNM=[]
     for i in range(len(scraper_obj.currency_list)):
-        combined_array.append([BNM_value[i][0],BNM_value[i][1],RHB_values[i][0],RHB_values[i][1],scraper_obj.currency_list[i],output[i]])
-        perc_diff.append(round(100*(float(combined_array[i][5])/float(combined_array[i][3])-1),3))
-        combined_array[i].append(perc_diff[i])
-        perc_diff_BNM.append(round(100*(float(combined_array[i][5])/float(combined_array[i][1])-1),3))
-        combined_array[i].append(perc_diff_BNM[i])
-    header=["BNM","","RHB","","MoneyMatch","","Markup vs RHB(%)","Markup vs BNM (%)"]
+    #     combined_array.append([BNM_value[i][0],BNM_value[i][1],RHB_values[i][0],RHB_values[i][1],scraper_obj.currency_list[i],output[i]])
+        
+        perc_diff.append(round(100*(float(output[i][1])/float(RHB_values[i][1])-1),3))
+    #     combined_array[i].append(perc_diff[i])
+        perc_diff_BNM.append(round(100*(float(output[i][1])/float(BNM_value[i][1])-1),3))
+    #     combined_array[i].append(perc_diff_BNM[i])
+    timenow=datetime.datetime.now(datetime.timezone.utc)
+    timestamp=int(timenow.timestamp())
+    string_time=[(str(timenow.year)+'-'+str(timenow.month)+'-'+str(timenow.day)),(str(timenow.hour)+':'+str(timenow.minute)+':'+str(timenow.second))]
+    combined_array=[]
+
+    combined_array.append(timestamp)
+    combined_array.append(string_time)
+    combined_array.append(BNM_value)
+    combined_array.append(RHB_values)
+    combined_array.append(output)
+    combined_array.append(perc_diff) 
+    combined_array.append(perc_diff_BNM)  
+    
+    #a function that converts time to timestamp format
+
+
+    initialize_header=False
+    header=["timestamp-UTC","datetime-UTC","BNM","RHB","MoneyMatch","Markup vs RHB(%)","Markup vs BNM (%)"]
     if not os.path.exists("./data"):
         os.makedirs("./data")
-    with open('data/currency_exchange_data.csv', 'a', newline='') as csvFile:
+    if not os.path.exists("./data/domestic_currency_exchange_data.csv"):
+        initialize_header=True
+        os.makedirs("./domestic_currency_exchange_data.csv")
+    with open('data/domestic_currency_exchange_data.csv', 'a', newline='') as csvFile:
+        # reader = csv.reader(csvFile)
         writer = csv.writer(csvFile)
-        string_time=[(str(timenow.year)+'-'+str(timenow.month)+'-'+str(timenow.day)),(str(timenow.hour)+':'+str(timenow.minute)+':'+str(timenow.second))]
-        writer.writerow('')
-        writer.writerow(string_time)
-        writer.writerow(header)
-        for i in range(len(combined_array)):
-            writer.writerow(combined_array[i])
+        if initialize_header==True:
+            writer.writerow(header)
+        writer.writerow(combined_array)
     csvFile.close()
 
 def RHBFunction(scraper_obj):
