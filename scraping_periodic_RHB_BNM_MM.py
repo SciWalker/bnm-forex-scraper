@@ -49,10 +49,7 @@ def BNMFunction(timenow):
             bnm_data.append([currency_exchange_rate[i]['currency_code'],currency_exchange_rate[i]['rate']['middle_rate']])
     return(bnm_data)
 
-
-
-def periodic_function(scraper_obj):
-
+def moneymatch_function(scraper_obj):
     link="https://transfer.moneymatch.co/business" 
     response = requests.get(link)
     html_page=response.content
@@ -64,15 +61,15 @@ def periodic_function(scraper_obj):
         arr1.append(scraper_obj.currency_list[i])
         arr1.append(text[i].get_text())
         output.append(arr1)
+    return output
+def periodic_function(scraper_obj):
+    moneymatch_output=moneymatch_function(scraper_obj)
+
     perc_diff=[]
     perc_diff_BNM=[]
     for i in range(len(scraper_obj.currency_list)):
-    #     combined_array.append([BNM_value[i][0],BNM_value[i][1],RHB_values[i][0],RHB_values[i][1],scraper_obj.currency_list[i],output[i]])
-        
-        perc_diff.append(round(100*(float(output[i][1])/float(RHB_values[i][1])-1),3))
-    #     combined_array[i].append(perc_diff[i])
-        perc_diff_BNM.append(round(100*(float(output[i][1])/float(BNM_value[i][1])-1),3))
-    #     combined_array[i].append(perc_diff_BNM[i])
+        perc_diff.append(round(100*(float(moneymatch_output[i][1])/float(RHB_values[i][1])-1),3))
+        perc_diff_BNM.append(round(100*(float(moneymatch_output[i][1])/float(BNM_value[i][1])-1),3))
     timenow=datetime.datetime.now(datetime.timezone.utc)
     timestamp=int(timenow.timestamp())
     string_time=[(str(timenow.year)+'-'+str(timenow.month)+'-'+str(timenow.day)),(str(timenow.hour)+':'+str(timenow.minute)+':'+str(timenow.second))]
@@ -82,7 +79,7 @@ def periodic_function(scraper_obj):
     combined_array.append(string_time)
     combined_array.append(BNM_value)
     combined_array.append(RHB_values)
-    combined_array.append(output)
+    combined_array.append(moneymatch_output)
     combined_array.append(perc_diff) 
     combined_array.append(perc_diff_BNM)  
     
@@ -107,11 +104,9 @@ def periodic_function(scraper_obj):
 def RHBFunction(scraper_obj):
     link="https://www.rhbgroup.com/treasury-rates/foreign-exchange/fx.csv"
 
-    ##TODO: read from the csv and get currency results, need to first remove spaces
     data = requests.get('https://www.rhbgroup.com/treasury-rates/foreign-exchange/fx.csv').content
     data=data.strip()
     data_str=data.decode('utf-8')
-    #df_data = requests.get(r'C:\Users\WenWei\Downloads\fx.csv')
     
     data_str="".join(data_str.split(" ")[2:])
     data_str=io.StringIO(data_str)
